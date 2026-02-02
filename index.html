@@ -199,6 +199,75 @@
         background: #eff6ff;
         color: #1d4ed8;
       }
+
+      /* STICKY NAVBAR */
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      }
+
+      /* NAV BUTTON INTERACTION */
+      nav button {
+        transition: all 0.2s ease;
+      }
+      nav button:hover {
+        transform: translateY(-1px);
+      }
+
+      /* SUBNAV ENHANCEMENT */
+      .subnav {
+        position: sticky;
+        top: 64px;
+        z-index: 900;
+        background: var(--bg);
+        padding: 8px 0;
+      }
+      .subnav button {
+        transition: all 0.2s ease;
+      }
+      .subnav button:hover {
+        background: #c7d2fe;
+      }
+
+      /* CARD INTERACTION */
+      .card {
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+      }
+      .card:hover {
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+      }
+
+      /* ORDER HISTORY TIMELINE */
+      .timeline {
+        border-left: 3px solid var(--border);
+        padding-left: 14px;
+      }
+      .timeline-item {
+        margin-bottom: 14px;
+        position: relative;
+      }
+      .timeline-item::before {
+        content: "";
+        width: 10px;
+        height: 10px;
+        background: var(--primary);
+        border-radius: 50%;
+        position: absolute;
+        left: -19px;
+        top: 4px;
+      }
+
+      /* EMPTY STATE */
+      .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: var(--muted);
+        font-size: 14px;
+      }
     </style>
   </head>
 
@@ -229,17 +298,26 @@
           >
             Products
           </button>
+
           <button
             id="navCart"
             onclick="scrollToSection('cartSection', 'navCart')"
           >
             Cart
           </button>
+
           <button
             id="navOrders"
             onclick="scrollToSection('ordersSection', 'navOrders')"
           >
             My Orders
+          </button>
+
+          <button
+            id="navHistory"
+            onclick="scrollToSection('customerOrderHistory', 'navHistory')"
+          >
+            Order History
           </button>
         </div>
 
@@ -445,10 +523,28 @@
           </p>
           <div id="customerOrdersList"></div>
         </div>
+
+        <div class="card hidden" id="customerOrderHistory">
+          <h3>Order History (Timeline)</h3>
+          <p class="text-muted">
+            Complete history of all actions performed on your orders.
+          </p>
+          <div id="customerHistoryTimeline" class="timeline"></div>
+        </div>
       </div>
 
       <!-- ================= ADMIN PANEL ================= -->
       <div id="adminPanel" class="hidden">
+        <div class="subnav">
+          <button onclick="scrollToSection('adminProducts', '')">
+            Products
+          </button>
+          <button onclick="scrollToSection('adminOrders', '')">Orders</button>
+          <button onclick="scrollToSection('adminOrderHistory', '')">
+            Order History
+          </button>
+        </div>
+
         <!-- ADD PRODUCT -->
         <div class="card">
           <h3>Add / Manage Products</h3>
@@ -503,6 +599,14 @@
             edit only when status is Pending or Contacted.
           </p>
           <div id="adminOrders"></div>
+        </div>
+
+        <div class="card" id="adminOrderHistory">
+          <h3>Order History (Admin)</h3>
+          <p class="text-muted">
+            Full audit trail of all status changes and quotations.
+          </p>
+          <div id="adminHistoryTimeline" class="timeline"></div>
         </div>
       </div>
     </div>
@@ -609,6 +713,8 @@
         renderAdminProducts();
         renderAdminOrders();
         renderCustomerOrdersList();
+        renderCustomerOrderHistory();
+        renderAdminOrderHistory();
       }
 
       function renderCustomerProducts() {
@@ -698,6 +804,72 @@
           cart.push({ ...p, qty: 1 });
         }
         renderCart();
+      }
+
+      function renderCustomerOrderHistory() {
+        const box = document.getElementById("customerHistoryTimeline");
+        if (!currentCustomerId) {
+          box.innerHTML = `<div class="empty-state">No customer selected.</div>`;
+          return;
+        }
+
+        const history = orders
+          .filter((o) => o.customerId === currentCustomerId)
+          .flatMap((o) =>
+            o.quotationHistory.map((q) => ({
+              ...q,
+              orderId: o.orderId,
+            })),
+          );
+
+        if (!history.length) {
+          box.innerHTML = `<div class="empty-state">No order history yet.</div>`;
+          return;
+        }
+
+        box.innerHTML = history
+          .map(
+            (h) => `
+    <div class="timeline-item">
+      <b>${prettifyStatus(h.status)}</b>
+      <div class="text-muted">
+        Order ${h.orderId} • ${h.date}
+      </div>
+      <div class="text-muted">${h.note || ""}</div>
+    </div>
+  `,
+          )
+          .join("");
+      }
+
+      function renderAdminOrderHistory() {
+        const box = document.getElementById("adminHistoryTimeline");
+        const allHistory = orders.flatMap((o) =>
+          (o.quotationHistory || []).map((q) => ({
+            ...q,
+            orderId: o.orderId,
+            customer: o.name,
+          })),
+        );
+
+        if (!allHistory.length) {
+          box.innerHTML = `<div class="empty-state">No history available.</div>`;
+          return;
+        }
+
+        box.innerHTML = allHistory
+          .map(
+            (h) => `
+    <div class="timeline-item">
+      <b>${prettifyStatus(h.status)}</b>
+      <div class="text-muted">
+        Order ${h.orderId} • ${h.customer} • ${h.date}
+      </div>
+      <div class="text-muted">${h.note}</div>
+    </div>
+  `,
+          )
+          .join("");
       }
 
       function changeQty(index, delta) {
@@ -856,8 +1028,7 @@
         document.getElementById("customerOrder").classList.remove("hidden");
 
         document.getElementById("orderCustomerName").textContent = order.name;
-        document.getElementById("orderCustomerPhone").textContent =
-          order.phone;
+        document.getElementById("orderCustomerPhone").textContent = order.phone;
         document.getElementById("orderIdLabel").textContent = order.orderId;
 
         const statusBadge = document.getElementById("orderStatusBadge");
@@ -988,10 +1159,7 @@
         }
 
         myOrders.forEach((o) => {
-          const total = o.items.reduce(
-            (sum, it) => sum + it.price * it.qty,
-            0,
-          );
+          const total = o.items.reduce((sum, it) => sum + it.price * it.qty, 0);
           const editable = o.status === "pending" || o.status === "contacted";
           box.innerHTML += `
       <div class="card" style="margin-bottom:10px;padding:10px 12px;">
@@ -1101,9 +1269,7 @@
           charge,
         };
 
-        document
-          .getElementById("shippingFormCustomer")
-          .classList.add("hidden");
+        document.getElementById("shippingFormCustomer").classList.add("hidden");
         showCustomerOrder(order);
         renderAdminOrders();
       }
@@ -1124,9 +1290,7 @@
         </div>
         <div>
           <span class="badge ${
-            p.active
-              ? "status-badge order_confirmed"
-              : "status-badge pending"
+            p.active ? "status-badge order_confirmed" : "status-badge pending"
           }">
             ${p.active ? "Active" : "Inactive"}
           </span>
@@ -1189,10 +1353,7 @@
 
         list.forEach((o) => {
           const idx = orders.findIndex((x) => x.orderId === o.orderId);
-          const total = o.items.reduce(
-            (sum, it) => sum + it.price * it.qty,
-            0,
-          );
+          const total = o.items.reduce((sum, it) => sum + it.price * it.qty, 0);
 
           box.innerHTML += `
       <div class="card" style="margin-bottom:10px;padding:10px 12px;">
@@ -1206,9 +1367,7 @@
             )}">${prettifyStatus(o.status)}</span></span><br>
             <span>Payment: <span class="${getPaymentBadgeClass(
               o.paymentStatus,
-            )}">${prettifyPaymentStatus(
-              o.paymentStatus,
-            )}</span></span><br>
+            )}">${prettifyPaymentStatus(o.paymentStatus)}</span></span><br>
             <span>Shipping: ${
               o.shipping
                 ? `Company ${o.shipping.companyName}, Charge ₹${o.shipping.charge}`
@@ -1257,9 +1416,7 @@
             o.address
               ? `${o.address.addr1}, ${
                   o.address.addr2 ? o.address.addr2 + ", " : ""
-                }${o.address.city}, ${o.address.state} - ${
-                  o.address.pincode
-                }`
+                }${o.address.city}, ${o.address.state} - ${o.address.pincode}`
               : "N/A"
           }</p>
 
@@ -1293,9 +1450,7 @@
               (o.quotationHistory || [])
                 .map(
                   (q) => `
-              <li>${q.date} – ${prettifyStatus(q.status)} – ${
-                    q.note || ""
-                  }</li>
+              <li>${q.date} – ${prettifyStatus(q.status)} – ${q.note || ""}</li>
             `,
                 )
                 .join("") || "<li>No quotation history yet.</li>"
