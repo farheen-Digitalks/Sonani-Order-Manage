@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>B2B Admin & Customer Prototype</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      :root {
+        --primary: #2563eb;
+        --dark: #1e40af;
+        --bg: #f1f5f9;
+        --card: #ffffff;
+        --border: #e2e8f0;
+        --muted: #64748b;
+        --danger: #dc2626;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg);
+        color: #0f172a;
+      }
+
+      /* MAIN NAV */
+      nav {
+        background: linear-gradient(90deg, var(--primary), var(--dark));
+        color: #fff;
+        padding: 14px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      nav .tabs {
+        display: flex;
+        gap: 8px;
+      }
+      nav button {
+        background: #ffffff;
+        color: #111827;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      nav button.active {
+        background: #0f172a;
+        color: #ffffff;
+      }
+
+      /* CUSTOMER SUB-NAV */
+      .subnav {
+        display: flex;
+        gap: 8px;
+        margin: 16px 0;
+      }
+      .subnav button {
+        background: #e5e7eb;
+        color: #111827;
+        border-radius: 999px;
+        padding: 6px 12px;
+      }
+      .subnav button.active {
+        background: #111827;
+        color: #ffffff;
+      }
+
+      /* LAYOUT */
+      .container {
+        max-width: 1200px;
+        margin: auto;
+        padding: 24px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .hidden {
+        display: none;
+      }
+      button {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      button.danger {
+        background: var(--danger);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+      label {
+        font-size: 13px;
+        color: #64748b;
+      }
+
+      .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: inline-block;
+      }
+      .status-badge.pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-badge.contacted {
+        background: #e0f2fe;
+        color: #1d4ed8;
+      }
+      .status-badge.quotation_finalized {
+        background: #ddd6fe;
+        color: #5b21b6;
+      }
+      .status-badge.order_confirmed {
+        background: #bbf7d0;
+        color: #166534;
+      }
+
+      .pay-badge.unpaid {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .pay-badge.partial_paid {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .pay-badge.paid {
+        background: #bbf7d0;
+        color: #166534;
+      }
+
+      /* Simple table for cart / orders */
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      .table th,
+      .table td {
+        padding: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      .table th {
+        text-align: left;
+        background: #f9fafb;
+      }
+
+      .text-muted {
+        color: #64748b;
+        font-size: 13px;
+      }
+      .flex-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: #eff6ff;
+        color: #1d4ed8;
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav>
+      <b>B2B Order System</b>
+      <div class="tabs">
+        <button
+          id="customerTab"
+          class="active"
+          onclick="switchMode('customer')"
+        >
+          Customer View
+        </button>
+        <button id="adminTab" onclick="switchMode('admin')">Admin View</button>
+      </div>
+    </nav>
+
+    <div class="container">
+      <!-- ================= CUSTOMER PANEL ================= -->
+      <div id="customerPanel">
+        <!-- CUSTOMER SUB NAV -->
+        <div class="subnav">
+          <button
+            id="navProducts"
+            class="active"
+            onclick="scrollToSection('productsSection', 'navProducts')"
+          >
+            Products
+          </button>
+          <button
+            id="navCart"
+            onclick="scrollToSection('cartSection', 'navCart')"
+          >
+            Cart
+          </button>
+          <button
+            id="navOrders"
+            onclick="scrollToSection('ordersSection', 'navOrders')"
+          >
+            My Orders
+          </button>
+        </div>
+
+        <!-- PRODUCTS -->
+        <div class="card" id="productsSection">
+          <div class="flex-between">
+            <h3>Products</h3>
+            <span class="chip">
+              <span id="cartCount">0</span> items in cart
+            </span>
+          </div>
+          <p class="text-muted">
+            Select items you want to order. Only active products from admin side
+            are visible here.
+          </p>
+          <div class="grid" id="customerProducts"></div>
+          <p id="noCustomerProducts" class="text-muted hidden">
+            No active products available. Please contact admin.
+          </p>
+        </div>
+
+        <!-- CART -->
+        <div class="card" id="cartSection">
+          <div class="flex-between">
+            <h3>Cart</h3>
+            <button class="secondary" onclick="clearCart()">Clear Cart</button>
+          </div>
+          <div id="cartContainer">
+            <p id="cartEmpty" class="text-muted">No items in cart.</p>
+            <table class="table hidden" id="cartTable">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Weight (gm)</th>
+                  <th>Price</th>
+                  <th>Qty</th>
+                  <th>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cartBody"></tbody>
+            </table>
+            <p id="cartTotal" class="text-muted hidden"></p>
+          </div>
+          <br />
+          <button id="proceedBtn" onclick="showCustomerForm()">Proceed</button>
+        </div>
+
+        <!-- CUSTOMER DETAILS -->
+        <div class="card hidden" id="customerForm">
+          <h3>Customer Details</h3>
+          <p class="text-muted">
+            Enter customer details to generate a unique link. This link will
+            allow customer to see all of their orders.
+          </p>
+          <label>Name</label>
+          <input id="cname" placeholder="Name" />
+          <label>Phone</label>
+          <input id="cphone" placeholder="Phone" />
+          <button id="generateLinkBtn" onclick="generateCustomer()">
+            Generate Order Link
+          </button>
+          <p id="customerLink" class="text-muted"></p>
+        </div>
+
+        <!-- PAYMENT + ADDRESS -->
+        <div class="card hidden" id="paymentForm">
+          <h3>Payment & Address</h3>
+          <p class="text-muted">
+            Review cart and enter payment amount, method and address.
+          </p>
+
+          <label>Amount</label>
+          <input id="amount" placeholder="Amount" />
+
+          <label>Payment Method</label>
+          <select id="payMethod">
+            <option>UPI</option>
+            <option>Bank Transfer</option>
+            <option>Cash</option>
+          </select>
+
+          <h4>Address</h4>
+          <label>Address Line 1</label>
+          <input id="addr1" placeholder="House / Street" />
+          <label>Address Line 2</label>
+          <input id="addr2" placeholder="Area / Landmark" />
+          <div class="grid">
+            <div>
+              <label>City</label>
+              <input id="city" placeholder="City" />
+            </div>
+            <div>
+              <label>State</label>
+              <input id="state" placeholder="State" />
+            </div>
+            <div>
+              <label>Pincode</label>
+              <input id="pincode" placeholder="Pincode" />
+            </div>
+          </div>
+
+          <button id="paymentButton" onclick="submitPayment()">
+            Submit Payment
+          </button>
+        </div>
+
+        <!-- SHIPPING STEP (CUSTOMER AFTER CONFIRMATION) -->
+        <div class="card hidden" id="shippingFormCustomer">
+          <h3>Shipping Details</h3>
+          <p class="text-muted">
+            Your order is confirmed. Please choose a shipping company to
+            complete shipping.
+          </p>
+          <p class="text-muted">
+            Total order weight: <span id="shippingTotalWeightLabel"></span> gm
+          </p>
+
+          <label>Shipping Company</label>
+          <select id="shippingCompanySelect">
+            <option value="">Select</option>
+          </select>
+
+          <label>Shipping Charge (calculated, you can see before submit)</label>
+          <input id="shippingChargeInput" disabled />
+
+          <button id="shippingSubmitButton" onclick="submitCustomerShipping()">
+            Submit Shipping
+          </button>
+        </div>
+
+        <!-- ORDER STATUS (LATEST ORDER) -->
+        <div class="card hidden" id="customerOrder">
+          <h3>My Latest Order</h3>
+          <p class="text-muted">
+            This is what your customer would see by opening their link.
+          </p>
+          <p>
+            Customer: <b id="orderCustomerName"></b> (<span
+              id="orderCustomerPhone"
+            ></span
+            >)
+          </p>
+          <p>Order ID: <b id="orderIdLabel"></b></p>
+          <p>
+            Order Status:
+            <span id="orderStatusBadge" class="badge status-badge pending"
+              >Pending</span
+            >
+            &nbsp; Payment:
+            <span id="orderPaymentBadge" class="badge pay-badge unpaid"
+              >Unpaid</span
+            >
+          </p>
+
+          <h4>Items</h4>
+          <table class="table" id="orderItemsTable">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Weight (gm)</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="orderItemsBody"></tbody>
+          </table>
+
+          <p style="margin-top: 10px">
+            Payment: <b id="orderPaymentSummary"></b>
+          </p>
+          <p style="margin-top: 4px">
+            Address: <span id="orderAddress"></span>
+          </p>
+
+          <h4 style="margin-top: 16px">Payment History</h4>
+          <table class="table" id="paymentHistoryTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+              </tr>
+            </thead>
+            <tbody id="paymentHistoryBody"></tbody>
+          </table>
+
+          <h4 style="margin-top: 16px">Shipping</h4>
+          <p id="orderShipping" class="text-muted"></p>
+
+          <h4 style="margin-top: 16px">Quotation History</h4>
+          <ul
+            id="orderQuotationHistory"
+            style="margin: 4px 0 0 18px; padding: 0"
+          ></ul>
+        </div>
+
+        <!-- ALL ORDERS FOR THIS CUSTOMER -->
+        <div class="card hidden" id="ordersSection">
+          <h3>My Orders (All)</h3>
+          <p class="text-muted">
+            All orders for the current customer ID in this prototype.
+          </p>
+          <div id="customerOrdersList"></div>
+        </div>
+      </div>
+
+      <!-- ================= ADMIN PANEL ================= -->
+      <div id="adminPanel" class="hidden">
+        <!-- ADD PRODUCT -->
+        <div class="card">
+          <h3>Add / Manage Products</h3>
+          <p class="text-muted">
+            Add products that will be visible to customers when marked as
+            active.
+          </p>
+          <div class="grid">
+            <div>
+              <label>Product Name</label>
+              <input id="pname" placeholder="Product Name" />
+            </div>
+            <div>
+              <label>Weight (gm)</label>
+              <input id="pweight" placeholder="Weight (gm)" />
+            </div>
+            <div>
+              <label>Price</label>
+              <input id="pprice" placeholder="Price" />
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="pstatus">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="addProduct()">Add Product</button>
+        </div>
+
+        <!-- PRODUCT LIST -->
+        <div class="card">
+          <h3>Products (Admin)</h3>
+          <div id="adminProducts"></div>
+        </div>
+
+        <!-- ORDERS LIST + FILTER -->
+        <div class="card">
+          <div class="flex-between">
+            <h3>Customer Orders</h3>
+            <select id="orderStatusFilter" onchange="renderAdminOrders()">
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="contacted">Contacted</option>
+              <option value="quotation_finalized">Quotation Finalized</option>
+              <option value="order_confirmed">Order Confirmed</option>
+            </select>
+          </div>
+          <p class="text-muted">
+            Admin can see all customers and their orders, filter by status and
+            edit only when status is Pending or Contacted.
+          </p>
+          <div id="adminOrders"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // PRODUCTS / SHIPPING MASTER
+      let mode = "customer";
+      let cart = [];
+      let products = [
+        {
+          id: 1,
+          name: "Umbrella Fabric",
+          weight: 200,
+          price: 120,
+          active: true,
+        },
+        { id: 2, name: "Handle", weight: 150, price: 80, active: false },
+      ];
+
+      let shippingCompanies = [
+        {
+          id: 1,
+          name: "BlueDart",
+          rates: [
+            { min: 0, max: 500, price: 50 },
+            { min: 501, max: 1000, price: 90 },
+            { min: 1001, max: 2000, price: 150 },
+          ],
+        },
+        {
+          id: 2,
+          name: "DTDC",
+          rates: [
+            { min: 0, max: 500, price: 45 },
+            { min: 501, max: 1000, price: 85 },
+            { min: 1001, max: 2000, price: 140 },
+          ],
+        },
+      ]; // weight-based ranges pattern similar to common e‑commerce setups [web:79][web:82]
+
+      // ORDERS
+      let orders = [];
+      // order: {
+      //   orderId, customerId, name, phone,
+      //   items, amount, method,
+      //   status, paymentStatus,
+      //   address, paymentHistory,
+      //   shipping: { companyId, companyName, weight, charge },
+      //   quotationHistory: [{ date, status, note }]
+      // }
+
+      let currentCustomerId = null;
+      let currentOrderId = null;
+      let tempOrderDraft = null;
+
+      function calculateShippingCharge(companyId, totalWeight) {
+        const company = shippingCompanies.find((c) => c.id === companyId);
+        if (!company) return 0;
+        const rate = company.rates.find(
+          (r) => totalWeight >= r.min && totalWeight <= r.max,
+        );
+        return rate ? rate.price : 0;
+      }
+
+      function switchMode(newMode) {
+        mode = newMode;
+        document
+          .getElementById("customerPanel")
+          .classList.toggle("hidden", mode !== "customer");
+        document
+          .getElementById("adminPanel")
+          .classList.toggle("hidden", mode !== "admin");
+        document
+          .getElementById("customerTab")
+          .classList.toggle("active", mode === "customer");
+        document
+          .getElementById("adminTab")
+          .classList.toggle("active", mode === "admin");
+        render();
+      }
+
+      function scrollToSection(id, navBtnId) {
+        const section = document.getElementById(id);
+        if (section) {
+          section.scrollIntoView({ behavior: "smooth" });
+        }
+        ["navProducts", "navCart", "navOrders"].forEach((x) => {
+          const btn = document.getElementById(x);
+          if (btn) btn.classList.remove("active");
+        });
+        if (navBtnId) {
+          const btn = document.getElementById(navBtnId);
+          if (btn) btn.classList.add("active");
+        }
+      }
+
+      function render() {
+        renderCustomerProducts();
+        renderCart();
+        renderAdminProducts();
+        renderAdminOrders();
+        renderCustomerOrdersList();
+      }
+
+      function renderCustomerProducts() {
+        const box = document.getElementById("customerProducts");
+        const emptyMsg = document.getElementById("noCustomerProducts");
+        box.innerHTML = "";
+        const activeProducts = products.filter((p) => p.active);
+
+        if (!activeProducts.length) {
+          emptyMsg.classList.remove("hidden");
+        } else {
+          emptyMsg.classList.add("hidden");
+        }
+
+        activeProducts.forEach((p) => {
+          box.innerHTML += `
+      <div class="card">
+        <img src="https://via.placeholder.com/150?text=${encodeURIComponent(p.name)}" width="100%">
+        <b>${p.name}</b><br>
+        <span class="text-muted">Weight: ${p.weight}gm</span><br>
+        <span class="text-muted">Price: ₹${p.price}</span><br><br>
+        <button onclick="addToCart(${p.id})">Add to Cart</button>
+      </div>`;
+        });
+      }
+
+      function renderCart() {
+        const countEl = document.getElementById("cartCount");
+        countEl.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+
+        const empty = document.getElementById("cartEmpty");
+        const table = document.getElementById("cartTable");
+        const tbody = document.getElementById("cartBody");
+        const totalEl = document.getElementById("cartTotal");
+
+        if (!cart.length) {
+          empty.classList.remove("hidden");
+          table.classList.add("hidden");
+          totalEl.classList.add("hidden");
+          tbody.innerHTML = "";
+          totalEl.textContent = "";
+          return;
+        }
+
+        empty.classList.add("hidden");
+        table.classList.remove("hidden");
+        tbody.innerHTML = "";
+
+        let total = 0;
+        cart.forEach((item, idx) => {
+          const subtotal = item.price * item.qty;
+          total += subtotal;
+          tbody.innerHTML += `
+      <tr>
+        <td>${item.name}</td>
+        <td>${item.weight}</td>
+        <td>₹${item.price}</td>
+        <td>
+          <button class="secondary" onclick="changeQty(${idx}, -1)">-</button>
+          ${item.qty}
+          <button class="secondary" onclick="changeQty(${idx}, 1)">+</button>
+        </td>
+        <td>₹${subtotal}</td>
+        <td><button class="danger" onclick="removeFromCart(${idx})">Remove</button></td>
+      </tr>
+    `;
+        });
+
+        totalEl.classList.remove("hidden");
+        totalEl.textContent = `Total: ₹${total}`;
+      }
+
+      function addToCart(id) {
+        const p = products.find((x) => x.id === id && x.active);
+        if (!p) return;
+        const existing = cart.find((c) => c.id === id);
+        if (existing) {
+          existing.qty += 1;
+        } else {
+          cart.push({ ...p, qty: 1 });
+        }
+        renderCart();
+      }
+
+      function changeQty(index, delta) {
+        cart[index].qty += delta;
+        if (cart[index].qty <= 0) {
+          cart.splice(index, 1);
+        }
+        renderCart();
+      }
+
+      function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+      }
+
+      function clearCart() {
+        if (!cart.length) return;
+        if (confirm("Clear all items from cart?")) {
+          cart = [];
+          renderCart();
+        }
+      }
+
+      function showCustomerForm() {
+        if (!cart.length) return alert("Cart is empty");
+        document.getElementById("customerForm").classList.remove("hidden");
+        document
+          .getElementById("customerForm")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      function generateCustomer() {
+        const name = document.getElementById("cname").value.trim();
+        const phone = document.getElementById("cphone").value.trim();
+
+        if (!name || !phone) {
+          return alert("Please enter name and phone");
+        }
+
+        currentCustomerId = "C" + Math.floor(Math.random() * 1000000);
+        currentOrderId = "O" + Math.floor(Math.random() * 1000000);
+
+        const link = `site.com/customer/${currentCustomerId}`;
+        document.getElementById("customerLink").innerHTML =
+          `Customer Link: <b>${link}</b><br><span class="text-muted">Use this link to view all orders for this customer.</span>`;
+
+        const linkBtn = document.getElementById("generateLinkBtn");
+        if (linkBtn) {
+          linkBtn.disabled = true;
+          linkBtn.textContent = "Link Generated";
+        }
+
+        tempOrderDraft = {
+          orderId: currentOrderId,
+          customerId: currentCustomerId,
+          name,
+          phone,
+          items: JSON.parse(JSON.stringify(cart)),
+          amount: null,
+          method: null,
+          status: "pending",
+          paymentStatus: "unpaid",
+          address: null,
+          paymentHistory: [],
+          shipping: null,
+          quotationHistory: [],
+        };
+
+        const itemsTotal = tempOrderDraft.items.reduce(
+          (sum, it) => sum + it.price * it.qty,
+          0,
+        );
+        const amountInput = document.getElementById("amount");
+        amountInput.value = itemsTotal;
+        amountInput.disabled = false;
+
+        const payBtn = document.getElementById("paymentButton");
+        if (payBtn) {
+          payBtn.disabled = false;
+          payBtn.textContent = "Submit Payment";
+        }
+
+        document.getElementById("paymentForm").classList.remove("hidden");
+        document
+          .getElementById("paymentForm")
+          .scrollIntoView({ behavior: "smooth" });
+      }
+
+      function submitPayment() {
+        if (!tempOrderDraft) {
+          return alert("Please fill customer details first.");
+        }
+        const amountVal = document.getElementById("amount").value.trim();
+        const amount = Number(amountVal || 0);
+        const method = document.getElementById("payMethod").value;
+
+        const addr1 = document.getElementById("addr1").value.trim();
+        const addr2 = document.getElementById("addr2").value.trim();
+        const city = document.getElementById("city").value.trim();
+        const state = document.getElementById("state").value.trim();
+        const pincode = document.getElementById("pincode").value.trim();
+
+        if (!amount) {
+          return alert("Please enter amount.");
+        }
+        if (!addr1 || !city || !state || !pincode) {
+          return alert(
+            "Please enter full address (line 1, city, state, pincode).",
+          );
+        }
+
+        const itemsTotal = tempOrderDraft.items.reduce(
+          (sum, it) => sum + it.price * it.qty,
+          0,
+        );
+
+        let paymentStatus = "partial_paid";
+        if (amount >= itemsTotal) paymentStatus = "paid";
+        else if (amount === 0) paymentStatus = "unpaid";
+
+        tempOrderDraft.amount = amount;
+        tempOrderDraft.method = method;
+        tempOrderDraft.paymentStatus = paymentStatus;
+        tempOrderDraft.address = { addr1, addr2, city, state, pincode };
+
+        tempOrderDraft.paymentHistory.push({
+          date: new Date().toLocaleString(),
+          amount,
+          method,
+        });
+
+        orders.push({ ...tempOrderDraft });
+
+        showCustomerOrder(tempOrderDraft);
+        cart = [];
+        renderCart();
+        renderCustomerOrdersList();
+
+        alert("Payment submitted. Order created!");
+
+        const payBtn = document.getElementById("paymentButton");
+        if (payBtn) {
+          payBtn.disabled = true;
+          payBtn.textContent = "Payment Submitted";
+        }
+      }
+
+      function getStatusBadgeClass(status) {
+        return "badge status-badge " + status;
+      }
+      function getPaymentBadgeClass(paymentStatus) {
+        return "badge pay-badge " + paymentStatus;
+      }
+
+      function showCustomerOrder(order) {
+        document.getElementById("customerOrder").classList.remove("hidden");
+
+        document.getElementById("orderCustomerName").textContent = order.name;
+        document.getElementById("orderCustomerPhone").textContent = order.phone;
+        document.getElementById("orderIdLabel").textContent = order.orderId;
+
+        const statusBadge = document.getElementById("orderStatusBadge");
+        statusBadge.textContent = prettifyStatus(order.status);
+        statusBadge.className = getStatusBadgeClass(order.status);
+
+        const payBadge = document.getElementById("orderPaymentBadge");
+        payBadge.textContent = prettifyPaymentStatus(order.paymentStatus);
+        payBadge.className = getPaymentBadgeClass(order.paymentStatus);
+
+        const tbody = document.getElementById("orderItemsBody");
+        tbody.innerHTML = "";
+        order.items.forEach((it) => {
+          const subtotal = it.price * it.qty;
+          tbody.innerHTML += `
+      <tr>
+        <td>${it.name}</td>
+        <td>${it.weight}</td>
+        <td>₹${it.price}</td>
+        <td>${it.qty}</td>
+        <td>₹${subtotal}</td>
+      </tr>
+    `;
+        });
+
+        document.getElementById("orderPaymentSummary").textContent =
+          `₹${order.amount} via ${order.method}`;
+
+        const addr = order.address;
+        document.getElementById("orderAddress").textContent = addr
+          ? `${addr.addr1}, ${addr.addr2 ? addr.addr2 + ", " : ""}${addr.city}, ${addr.state} - ${addr.pincode}`
+          : "N/A";
+
+        const phBody = document.getElementById("paymentHistoryBody");
+        phBody.innerHTML = "";
+        (order.paymentHistory || []).forEach((p) => {
+          phBody.innerHTML += `
+      <tr>
+        <td>${p.date}</td>
+        <td>₹${p.amount}</td>
+        <td>${p.method}</td>
+      </tr>
+    `;
+        });
+
+        const shippingEl = document.getElementById("orderShipping");
+        if (order.shipping) {
+          shippingEl.textContent = `Company: ${order.shipping.companyName}, Weight: ${order.shipping.weight} gm, Charge: ₹${order.shipping.charge}`;
+        } else {
+          shippingEl.textContent = "Shipping not assigned yet.";
+        }
+
+        const qList = document.getElementById("orderQuotationHistory");
+        qList.innerHTML = "";
+        if (order.quotationHistory && order.quotationHistory.length) {
+          order.quotationHistory.forEach((q) => {
+            const li = document.createElement("li");
+            li.textContent = `${q.date} – ${prettifyStatus(q.status)} – ${q.note || ""}`;
+            qList.appendChild(li);
+          });
+        } else {
+          const li = document.createElement("li");
+          li.textContent = "No quotation history yet.";
+          qList.appendChild(li);
+        }
+
+        // Show shipping form to customer only when status is confirmed and shipping not filled
+        // Show shipping form to customer only when status is confirmed and shipping not filled
+        const shippingForm = document.getElementById("shippingFormCustomer");
+        if (order.status === "order_confirmed" && !order.shipping) {
+          const totalWeight = order.items.reduce(
+            (sum, it) => sum + it.weight * it.qty,
+            0,
+          );
+          document.getElementById("shippingTotalWeightLabel").textContent =
+            totalWeight;
+
+          const select = document.getElementById("shippingCompanySelect");
+          select.innerHTML =
+            '<option value="">Select</option>' +
+            shippingCompanies
+              .map((c) => `<option value="${c.id}">${c.name}</option>`)
+              .join("");
+
+          const chargeInput = document.getElementById("shippingChargeInput");
+          chargeInput.value = "";
+
+          // when customer picks a company, show its calculated charge so they can compare
+          select.onchange = function () {
+            const companyIdStr = this.value;
+            if (!companyIdStr) {
+              chargeInput.value = "";
+              return;
+            }
+            const companyId = Number(companyIdStr);
+            const charge = calculateShippingCharge(companyId, totalWeight);
+            chargeInput.value = `₹${charge}`;
+          };
+
+          shippingForm.classList.remove("hidden");
+        } else {
+          shippingForm.classList.add("hidden");
+        }
+      }
+
+      function renderCustomerOrdersList() {
+        const box = document.getElementById("customerOrdersList");
+        const section = document.getElementById("ordersSection");
+        if (!currentCustomerId) {
+          section.classList.add("hidden");
+          return;
+        }
+        section.classList.remove("hidden");
+
+        const myOrders = orders.filter(
+          (o) => o.customerId === currentCustomerId,
+        );
+        box.innerHTML = "";
+
+        if (!myOrders.length) {
+          box.innerHTML =
+            '<p class="text-muted">No orders yet for this customer.</p>';
+          return;
+        }
+
+        myOrders.forEach((o) => {
+          const total = o.items.reduce((sum, it) => sum + it.price * it.qty, 0);
+          const editable = o.status === "pending" || o.status === "contacted";
+          box.innerHTML += `
+      <div class="card" style="margin-bottom:10px;padding:10px 12px;">
+        <div class="flex-between">
+          <div>
+            <b>Order ID: ${o.orderId}</b><br>
+            <span class="text-muted">Status: ${prettifyStatus(o.status)}</span><br>
+            <span class="text-muted">Payment: ${prettifyPaymentStatus(o.paymentStatus)}</span>
+          </div>
+          <div>
+            ${editable ? `<button onclick="editOrderAsCustomer('${o.orderId}')">Edit Order</button>` : `<span class="text-muted">Locked for editing</span>`}
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <b>Items:</b>
+          <ul style="margin:4px 0 0 18px;padding:0;">
+            ${o.items.map((it) => `<li>${it.name} – ₹${it.price} x ${it.qty}</li>`).join("")}
+          </ul>
+          <p style="margin-top:6px;">Order Total: <b>₹${total}</b></p>
+        </div>
+      </div>
+    `;
+        });
+      }
+
+      function editOrderAsCustomer(orderId) {
+        const order = orders.find((o) => o.orderId === orderId);
+        if (!order) return;
+
+        if (!(order.status === "pending" || order.status === "contacted")) {
+          alert("Order cannot be edited in current status.");
+          return;
+        }
+
+        cart = order.items.map((it) => ({ ...it }));
+        renderCart();
+        scrollToSection("cartSection", "navCart");
+        alert("Items loaded into cart for editing. (Prototype behaviour)");
+      }
+
+      function prettifyStatus(status) {
+        switch (status) {
+          case "pending":
+            return "Pending";
+          case "contacted":
+            return "Contacted";
+          case "quotation_finalized":
+            return "Quotation Finalized";
+          case "order_confirmed":
+            return "Order Confirmed";
+          default:
+            return status;
+        }
+      }
+      function prettifyPaymentStatus(ps) {
+        switch (ps) {
+          case "unpaid":
+            return "Unpaid";
+          case "partial_paid":
+            return "Partial Paid";
+          case "paid":
+            return "Paid";
+          default:
+            return ps;
+        }
+      }
+
+      /* CUSTOMER SHIPPING SUBMIT */
+      function submitCustomerShipping() {
+        const order = orders.find((o) => o.orderId === currentOrderId);
+        if (!order) {
+          alert("Order not found.");
+          return;
+        }
+        if (order.status !== "order_confirmed") {
+          alert("Order is not confirmed yet.");
+          return;
+        }
+        const companyIdStr = document.getElementById(
+          "shippingCompanySelect",
+        ).value;
+        if (!companyIdStr) {
+          alert("Please select shipping company.");
+          return;
+        }
+        const companyId = Number(companyIdStr);
+        const totalWeight = order.items.reduce(
+          (sum, it) => sum + it.weight * it.qty,
+          0,
+        );
+        const charge = calculateShippingCharge(companyId, totalWeight);
+        const company = shippingCompanies.find((c) => c.id === companyId);
+
+        order.shipping = {
+          companyId,
+          companyName: company ? company.name : "",
+          weight: totalWeight,
+          charge,
+        };
+
+        document.getElementById("shippingFormCustomer").classList.add("hidden");
+        showCustomerOrder(order);
+        renderAdminOrders();
+      }
+
+      /* =========== ADMIN SIDE =========== */
+
+      function renderAdminProducts() {
+        const box = document.getElementById("adminProducts");
+        box.innerHTML = "";
+        if (!products.length) {
+          box.innerHTML = '<p class="text-muted">No products added yet.</p>';
+          return;
+        }
+        products.forEach((p, idx) => {
+          box.innerHTML += `
+      <div class="flex-between" style="padding:6px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <b>${p.name}</b> – ${p.weight}gm – ₹${p.price}<br>
+          <span class="text-muted">ID: ${p.id}</span>
+        </div>
+        <div>
+          <span class="badge ${p.active ? "status-badge order_confirmed" : "status-badge pending"}">
+            ${p.active ? "Active" : "Inactive"}
+          </span>
+          <button class="secondary" style="margin-left:8px" onclick="toggleProductStatus(${idx})">
+            ${p.active ? "Deactivate" : "Activate"}
+          </button>
+        </div>
+      </div>
+    `;
+        });
+      }
+
+      function toggleProductStatus(index) {
+        products[index].active = !products[index].active;
+        render();
+      }
+
+      function addProduct() {
+        const name = document.getElementById("pname").value.trim();
+        const weight = document.getElementById("pweight").value.trim();
+        const price = document.getElementById("pprice").value.trim();
+        const status = document.getElementById("pstatus").value === "true";
+
+        if (!name || !weight || !price) {
+          return alert("Please enter product name, weight and price.");
+        }
+
+        products.push({
+          id: Date.now(),
+          name,
+          weight: Number(weight),
+          price: Number(price),
+          active: status,
+        });
+
+        document.getElementById("pname").value = "";
+        document.getElementById("pweight").value = "";
+        document.getElementById("pprice").value = "";
+
+        render();
+      }
+
+      function renderAdminOrders() {
+        const box = document.getElementById("adminOrders");
+        const filter =
+          document.getElementById("orderStatusFilter")?.value || "";
+        box.innerHTML = "";
+
+        const list = filter
+          ? orders.filter((o) => o.status === filter)
+          : orders;
+
+        if (!list.length) {
+          box.innerHTML =
+            '<p class="text-muted">No orders for selected filter.</p>';
+          return;
+        }
+
+        list.forEach((o) => {
+          const idx = orders.findIndex((x) => x.orderId === o.orderId);
+          const total = o.items.reduce((sum, it) => sum + it.price * it.qty, 0);
+
+          box.innerHTML += `
+      <div class="card" style="margin-bottom:10px;padding:10px 12px;">
+        <div class="flex-between">
+          <div>
+            <b>${o.name}</b> (${o.phone})<br>
+            <span class="text-muted">Customer ID: ${o.customerId}</span><br>
+            <span class="text-muted">Order ID: ${o.orderId}</span><br>
+            <span>Order Status: <span class="${getStatusBadgeClass(o.status)}">${prettifyStatus(o.status)}</span></span><br>
+            <span>Payment: <span class="${getPaymentBadgeClass(o.paymentStatus)}">${prettifyPaymentStatus(o.paymentStatus)}</span></span><br>
+            <span>Shipping: ${
+              o.shipping
+                ? `Company ${o.shipping.companyName}, Charge ₹${o.shipping.charge}`
+                : "Not filled by customer yet"
+            }</span>
+          </div>
+          <div>
+            <select onchange="changeOrderStatus(${idx}, this.value)" style="margin-top:6px;">
+              <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
+              <option value="contacted" ${o.status === "contacted" ? "selected" : ""}>Contacted</option>
+              <option value="quotation_finalized" ${o.status === "quotation_finalized" ? "selected" : ""}>Quotation Finalized</option>
+              <option value="order_confirmed" ${o.status === "order_confirmed" ? "selected" : ""}>Order Confirmed</option>
+            </select>
+            <br>
+    
+            ${
+              o.status === "pending" || o.status === "contacted"
+                ? `<button style="margin-top:8px;" onclick="editOrderAsAdmin(${idx})">Edit Order (Items)</button>`
+                : `<span style="margin-top:8px;" class="text-muted">Locked in this status</span>`
+            }
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <b>Items:</b>
+          <ul style="margin:4px 0 0 18px;padding:0;">
+            ${o.items.map((it) => `<li>${it.name} (${it.weight}gm) – ₹${it.price} x ${it.qty}</li>`).join("")}
+          </ul>
+          <p style="margin-top:6px;">Order Total: <b>₹${total}</b></p>
+          <p style="margin-top:4px;">Payment: <b>₹${o.amount}</b> via <b>${o.method}</b></p>
+          <p style="margin-top:4px;">Address: ${
+            o.address
+              ? `${o.address.addr1}, ${o.address.addr2 ? o.address.addr2 + ", " : ""}${o.address.city}, ${o.address.state} - ${o.address.pincode}`
+              : "N/A"
+          }</p>
+
+          <h4 style="margin-top:10px;">Payment History</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Amount</th>
+                <th>Method</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(o.paymentHistory || [])
+                .map(
+                  (p) => `
+                <tr>
+                  <td>${p.date}</td>
+                  <td>₹${p.amount}</td>
+                  <td>${p.method}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+
+          <h4 style="margin-top:10px;">Quotation History</h4>
+          <ul style="margin:4px 0 0 18px;padding:0;">
+            ${
+              (o.quotationHistory || [])
+                .map(
+                  (q) => `
+              <li>${q.date} – ${prettifyStatus(q.status)} – ${q.note || ""}</li>
+            `,
+                )
+                .join("") || "<li>No quotation history yet.</li>"
+            }
+          </ul>
+        </div>
+      </div>
+    `;
+        });
+      }
+
+      function changeOrderStatus(index, newStatus) {
+        const oldStatus = orders[index].status;
+        orders[index].status = newStatus;
+
+        orders[index].quotationHistory = orders[index].quotationHistory || [];
+        orders[index].quotationHistory.push({
+          date: new Date().toLocaleString(),
+          status: newStatus,
+          note: `Status changed from ${prettifyStatus(oldStatus)} to ${prettifyStatus(newStatus)}`,
+        });
+
+        renderAdminOrders();
+
+        if (
+          tempOrderDraft &&
+          orders[index].orderId === tempOrderDraft.orderId
+        ) {
+          showCustomerOrder(orders[index]);
+        }
+      }
+
+      function changePaymentStatus(index, newStatus) {
+        orders[index].paymentStatus = newStatus;
+        renderAdminOrders();
+
+        if (
+          tempOrderDraft &&
+          orders[index].orderId === tempOrderDraft.orderId
+        ) {
+          showCustomerOrder(orders[index]);
+        }
+      }
+
+      function editOrderAsAdmin(index) {
+        const o = orders[index];
+        if (!(o.status === "pending" || o.status === "contacted")) {
+          alert(
+            "Order cannot be edited in this status. Set status to Pending first.",
+          );
+          return;
+        }
+        cart = o.items.map((it) => ({ ...it }));
+        renderCart();
+        mode = "customer";
+        switchMode("customer");
+        scrollToSection("cartSection", "navCart");
+        alert(
+          "Admin loaded items into cart to simulate editing. In real app you would have admin edit UI.",
+        );
+      }
+
+      render();
+    </script>
+  </body>
+</html>
