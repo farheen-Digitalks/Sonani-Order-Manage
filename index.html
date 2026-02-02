@@ -929,13 +929,15 @@
           select.innerHTML =
             '<option value="">Select</option>' +
             shippingCompanies
-              .map((c) => `<option value="${c.id}">${c.name}</option>`)
+              .map((c) => {
+                const charge = calculateShippingCharge(c.id, totalWeight);
+                return `<option value="${c.id}">${c.name} (₹${charge})</option>`;
+              })
               .join("");
 
           const chargeInput = document.getElementById("shippingChargeInput");
           chargeInput.value = "";
 
-          // when customer picks a company, show its calculated charge so they can compare
           select.onchange = function () {
             const companyIdStr = this.value;
             if (!companyIdStr) {
