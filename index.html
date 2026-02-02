@@ -312,7 +312,6 @@
           <p class="text-muted">
             Review cart and enter payment amount, method and address.
           </p>
-
           <label>Amount</label>
           <input id="amount" placeholder="Amount" />
 
@@ -510,19 +509,9 @@
     </div>
 
     <script>
-      // PRODUCTS / SHIPPING MASTER
       let mode = "customer";
       let cart = [];
-      let products = [
-        {
-          id: 1,
-          name: "Umbrella Fabric",
-          weight: 200,
-          price: 120,
-          active: true,
-        },
-        { id: 2, name: "Handle", weight: 150, price: 80, active: false },
-      ];
+      let products = [];
 
       let shippingCompanies = [
         {
@@ -543,22 +532,32 @@
             { min: 1001, max: 2000, price: 140 },
           ],
         },
-      ]; // weight-based ranges pattern similar to common e‑commerce setups [web:79][web:82]
+      ];
 
-      // ORDERS
       let orders = [];
-      // order: {
-      //   orderId, customerId, name, phone,
-      //   items, amount, method,
-      //   status, paymentStatus,
-      //   address, paymentHistory,
-      //   shipping: { companyId, companyName, weight, charge },
-      //   quotationHistory: [{ date, status, note }]
-      // }
-
       let currentCustomerId = null;
       let currentOrderId = null;
       let tempOrderDraft = null;
+
+      async function loadProductsFromApi() {
+        try {
+          const res = await fetch("https://dummyjson.com/products");
+          const data = await res.json();
+          products = data.products.map((p) => ({
+            id: p.id,
+            name: p.title,
+            weight: typeof p.weight === "number" ? p.weight : 100,
+            price: p.price,
+            active: p.stock > 0,
+            thumbnail: p.thumbnail,
+            images: p.images || [],
+            rating: p.rating,
+          }));
+        } catch (err) {
+          console.error("Failed to load products from API", err);
+          alert("Failed to load products, using local fallback.");
+        }
+      }
 
       function calculateShippingCharge(companyId, totalWeight) {
         const company = shippingCompanies.find((c) => c.id === companyId);
@@ -583,7 +582,8 @@
         document
           .getElementById("adminTab")
           .classList.toggle("active", mode === "admin");
-        render();
+
+        loadProductsFromApi().then(render);
       }
 
       function scrollToSection(id, navBtnId) {
@@ -622,9 +622,16 @@
         }
 
         activeProducts.forEach((p) => {
+          const imgSrc =
+            p.thumbnail ||
+            (p.images && p.images[0]) ||
+            `https://via.placeholder.com/150?text=${encodeURIComponent(
+              p.name,
+            )}`;
+
           box.innerHTML += `
       <div class="card">
-        <img src="https://via.placeholder.com/150?text=${encodeURIComponent(p.name)}" width="100%">
+        <img src="${imgSrc}" alt="${p.name}" width="100%">
         <b>${p.name}</b><br>
         <span class="text-muted">Weight: ${p.weight}gm</span><br>
         <span class="text-muted">Price: ₹${p.price}</span><br><br>
@@ -847,7 +854,8 @@
         document.getElementById("customerOrder").classList.remove("hidden");
 
         document.getElementById("orderCustomerName").textContent = order.name;
-        document.getElementById("orderCustomerPhone").textContent = order.phone;
+        document.getElementById("orderCustomerPhone").textContent =
+          order.phone;
         document.getElementById("orderIdLabel").textContent = order.orderId;
 
         const statusBadge = document.getElementById("orderStatusBadge");
@@ -878,7 +886,9 @@
 
         const addr = order.address;
         document.getElementById("orderAddress").textContent = addr
-          ? `${addr.addr1}, ${addr.addr2 ? addr.addr2 + ", " : ""}${addr.city}, ${addr.state} - ${addr.pincode}`
+          ? `${addr.addr1}, ${
+              addr.addr2 ? addr.addr2 + ", " : ""
+            }${addr.city}, ${addr.state} - ${addr.pincode}`
           : "N/A";
 
         const phBody = document.getElementById("paymentHistoryBody");
@@ -905,7 +915,9 @@
         if (order.quotationHistory && order.quotationHistory.length) {
           order.quotationHistory.forEach((q) => {
             const li = document.createElement("li");
-            li.textContent = `${q.date} – ${prettifyStatus(q.status)} – ${q.note || ""}`;
+            li.textContent = `${q.date} – ${prettifyStatus(q.status)} – ${
+              q.note || ""
+            }`;
             qList.appendChild(li);
           });
         } else {
@@ -914,8 +926,6 @@
           qList.appendChild(li);
         }
 
-        // Show shipping form to customer only when status is confirmed and shipping not filled
-        // Show shipping form to customer only when status is confirmed and shipping not filled
         const shippingForm = document.getElementById("shippingFormCustomer");
         if (order.status === "order_confirmed" && !order.shipping) {
           const totalWeight = order.items.reduce(
@@ -976,24 +986,37 @@
         }
 
         myOrders.forEach((o) => {
-          const total = o.items.reduce((sum, it) => sum + it.price * it.qty, 0);
+          const total = o.items.reduce(
+            (sum, it) => sum + it.price * it.qty,
+            0,
+          );
           const editable = o.status === "pending" || o.status === "contacted";
           box.innerHTML += `
       <div class="card" style="margin-bottom:10px;padding:10px 12px;">
         <div class="flex-between">
           <div>
             <b>Order ID: ${o.orderId}</b><br>
-            <span class="text-muted">Status: ${prettifyStatus(o.status)}</span><br>
-            <span class="text-muted">Payment: ${prettifyPaymentStatus(o.paymentStatus)}</span>
+            <span class="text-muted">Status: ${prettifyStatus(
+              o.status,
+            )}</span><br>
+            <span class="text-muted">Payment: ${prettifyPaymentStatus(
+              o.paymentStatus,
+            )}</span>
           </div>
           <div>
-            ${editable ? `<button onclick="editOrderAsCustomer('${o.orderId}')">Edit Order</button>` : `<span class="text-muted">Locked for editing</span>`}
+            ${
+              editable
+                ? `<button onclick="editOrderAsCustomer('${o.orderId}')">Edit Order</button>`
+                : `<span class="text-muted">Locked for editing</span>`
+            }
           </div>
         </div>
         <div style="margin-top:8px;">
           <b>Items:</b>
           <ul style="margin:4px 0 0 18px;padding:0;">
-            ${o.items.map((it) => `<li>${it.name} – ₹${it.price} x ${it.qty}</li>`).join("")}
+            ${o.items
+              .map((it) => `<li>${it.name} – ₹${it.price} x ${it.qty}</li>`)
+              .join("")}
           </ul>
           <p style="margin-top:6px;">Order Total: <b>₹${total}</b></p>
         </div>
@@ -1044,7 +1067,6 @@
         }
       }
 
-      /* CUSTOMER SHIPPING SUBMIT */
       function submitCustomerShipping() {
         const order = orders.find((o) => o.orderId === currentOrderId);
         if (!order) {
@@ -1077,12 +1099,12 @@
           charge,
         };
 
-        document.getElementById("shippingFormCustomer").classList.add("hidden");
+        document
+          .getElementById("shippingFormCustomer")
+          .classList.add("hidden");
         showCustomerOrder(order);
         renderAdminOrders();
       }
-
-      /* =========== ADMIN SIDE =========== */
 
       function renderAdminProducts() {
         const box = document.getElementById("adminProducts");
@@ -1099,7 +1121,11 @@
           <span class="text-muted">ID: ${p.id}</span>
         </div>
         <div>
-          <span class="badge ${p.active ? "status-badge order_confirmed" : "status-badge pending"}">
+          <span class="badge ${
+            p.active
+              ? "status-badge order_confirmed"
+              : "status-badge pending"
+          }">
             ${p.active ? "Active" : "Inactive"}
           </span>
           <button class="secondary" style="margin-left:8px" onclick="toggleProductStatus(${idx})">
@@ -1159,7 +1185,10 @@
 
         list.forEach((o) => {
           const idx = orders.findIndex((x) => x.orderId === o.orderId);
-          const total = o.items.reduce((sum, it) => sum + it.price * it.qty, 0);
+          const total = o.items.reduce(
+            (sum, it) => sum + it.price * it.qty,
+            0,
+          );
 
           box.innerHTML += `
       <div class="card" style="margin-bottom:10px;padding:10px 12px;">
@@ -1168,8 +1197,14 @@
             <b>${o.name}</b> (${o.phone})<br>
             <span class="text-muted">Customer ID: ${o.customerId}</span><br>
             <span class="text-muted">Order ID: ${o.orderId}</span><br>
-            <span>Order Status: <span class="${getStatusBadgeClass(o.status)}">${prettifyStatus(o.status)}</span></span><br>
-            <span>Payment: <span class="${getPaymentBadgeClass(o.paymentStatus)}">${prettifyPaymentStatus(o.paymentStatus)}</span></span><br>
+            <span>Order Status: <span class="${getStatusBadgeClass(
+              o.status,
+            )}">${prettifyStatus(o.status)}</span></span><br>
+            <span>Payment: <span class="${getPaymentBadgeClass(
+              o.paymentStatus,
+            )}">${prettifyPaymentStatus(
+              o.paymentStatus,
+            )}</span></span><br>
             <span>Shipping: ${
               o.shipping
                 ? `Company ${o.shipping.companyName}, Charge ₹${o.shipping.charge}`
@@ -1178,13 +1213,21 @@
           </div>
           <div>
             <select onchange="changeOrderStatus(${idx}, this.value)" style="margin-top:6px;">
-              <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
-              <option value="contacted" ${o.status === "contacted" ? "selected" : ""}>Contacted</option>
-              <option value="quotation_finalized" ${o.status === "quotation_finalized" ? "selected" : ""}>Quotation Finalized</option>
-              <option value="order_confirmed" ${o.status === "order_confirmed" ? "selected" : ""}>Order Confirmed</option>
+              <option value="pending" ${
+                o.status === "pending" ? "selected" : ""
+              }>Pending</option>
+              <option value="contacted" ${
+                o.status === "contacted" ? "selected" : ""
+              }>Contacted</option>
+              <option value="quotation_finalized" ${
+                o.status === "quotation_finalized" ? "selected" : ""
+              }>Quotation Finalized</option>
+              <option value="order_confirmed" ${
+                o.status === "order_confirmed" ? "selected" : ""
+              }>Order Confirmed</option>
             </select>
             <br>
-    
+
             ${
               o.status === "pending" || o.status === "contacted"
                 ? `<button style="margin-top:8px;" onclick="editOrderAsAdmin(${idx})">Edit Order (Items)</button>`
@@ -1195,13 +1238,24 @@
         <div style="margin-top:8px;">
           <b>Items:</b>
           <ul style="margin:4px 0 0 18px;padding:0;">
-            ${o.items.map((it) => `<li>${it.name} (${it.weight}gm) – ₹${it.price} x ${it.qty}</li>`).join("")}
+            ${o.items
+              .map(
+                (it) =>
+                  `<li>${it.name} (${it.weight}gm) – ₹${it.price} x ${it.qty}</li>`,
+              )
+              .join("")}
           </ul>
           <p style="margin-top:6px;">Order Total: <b>₹${total}</b></p>
-          <p style="margin-top:4px;">Payment: <b>₹${o.amount}</b> via <b>${o.method}</b></p>
+          <p style="margin-top:4px;">Payment: <b>₹${o.amount}</b> via <b>${
+            o.method
+          }</b></p>
           <p style="margin-top:4px;">Address: ${
             o.address
-              ? `${o.address.addr1}, ${o.address.addr2 ? o.address.addr2 + ", " : ""}${o.address.city}, ${o.address.state} - ${o.address.pincode}`
+              ? `${o.address.addr1}, ${
+                  o.address.addr2 ? o.address.addr2 + ", " : ""
+                }${o.address.city}, ${o.address.state} - ${
+                  o.address.pincode
+                }`
               : "N/A"
           }</p>
 
@@ -1235,7 +1289,9 @@
               (o.quotationHistory || [])
                 .map(
                   (q) => `
-              <li>${q.date} – ${prettifyStatus(q.status)} – ${q.note || ""}</li>
+              <li>${q.date} – ${prettifyStatus(q.status)} – ${
+                    q.note || ""
+                  }</li>
             `,
                 )
                 .join("") || "<li>No quotation history yet.</li>"
@@ -1255,7 +1311,9 @@
         orders[index].quotationHistory.push({
           date: new Date().toLocaleString(),
           status: newStatus,
-          note: `Status changed from ${prettifyStatus(oldStatus)} to ${prettifyStatus(newStatus)}`,
+          note: `Status changed from ${prettifyStatus(
+            oldStatus,
+          )} to ${prettifyStatus(newStatus)}`,
         });
 
         renderAdminOrders();
@@ -1298,7 +1356,8 @@
         );
       }
 
-      render();
+      // initial load
+      loadProductsFromApi().then(render);
     </script>
   </body>
 </html>
